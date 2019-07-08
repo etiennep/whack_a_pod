@@ -22,16 +22,16 @@ reset: clean.deployment app
 
 reset.safe: env creds
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o "$(BASEDIR)/../containers/main" "$(BASEDIR)/../containers/main.go"
-	gcloud container builds submit "$(BASEDIR)/../containers/." --tag=$(DOCKERREPO)/api
+	gcloud builds submit "$(BASEDIR)/../containers/." --tag=$(DOCKERREPO)/api
 	-kubectl delete deployment api-deployment
-	-kubectl run api-deployment --image=$(DOCKERREPO)/api --replicas=12 --port=8080 --labels=app=api 
-	say "app refresh complete"		
+	-kubectl run api-deployment --image=$(DOCKERREPO)/api --replicas=12 --port=8080 --labels=app=api
+	say "app refresh complete"
 
 main:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o "$(BASEDIR)/../containers/main" "$(BASEDIR)/../containers/main.go"
 
 build: env main
-	gcloud container builds submit "$(BASEDIR)/../containers/." --tag=$(DOCKERREPO)/api
+	gcloud builds submit "$(BASEDIR)/../containers/." --tag=$(DOCKERREPO)/api
 
 build.dockerhub: main
 	docker build "$(BASEDIR)/../containers/." --tag=$(DOCKERREPO):api
@@ -49,33 +49,33 @@ deploy.minikube.dockerhub:
 	kubectl run api-deployment --image=$(DOCKERREPO):api --replicas=12 --port=8080 --labels=app=api
 	kubectl expose deployment api-deployment --name=api --target-port=8080  --type=NodePort --labels="app=api"
 
-deploy.generic: 
-	kubectl run api-deployment --image=$(DOCKERREPO)/whackapod-api --replicas=12 --port=8080 --labels=app=api 
+deploy.generic:
+	kubectl run api-deployment --image=$(DOCKERREPO)/whackapod-api --replicas=12 --port=8080 --labels=app=api
 	kubectl expose deployment api-deployment --name=api --target-port=8080  --type=NodePort --labels="app=api"
 
-test: 
+test:
 	cd 	"$(BASEDIR)/../containers" && go test
 
 deployment:
-	kubectl run api-deployment --image=$(DOCKERREPO)/api --replicas=12 --port=8080 --labels=app=api 
+	kubectl run api-deployment --image=$(DOCKERREPO)/api --replicas=12 --port=8080 --labels=app=api
 
 service:
 	kubectl expose deployment api-deployment --name=api --target-port=8080  --type=NodePort --labels="app=api"
 
-clean: env creds clean.deployment clean.service 
-clean.generic: clean.deployment clean.service 
+clean: env creds clean.deployment clean.service
+clean.generic: clean.deployment clean.service
 
-clean.minikube: clean.deployment clean.service 
+clean.minikube: clean.deployment clean.service
 
-clean.deployment: 
+clean.deployment:
 	-kubectl delete deployment api-deployment
-	
-clean.service: 
+
+clean.service:
 	-kubectl delete service api
 
 retry: clean build deploy
 
-config: env 
+config: env
 	@echo Creating API Yaml files based on samples and setting in your Makefile.properties
 	@cp "$(BASEDIR)/api-deployment.sample.yaml" "$(BASEDIR)/api-deployment.yaml"
 	$(call rewritefile,"$(BASEDIR)/api-deployment.yaml",%PROJECT%,$(PROJECT))
@@ -83,5 +83,5 @@ config: env
 define rewritefile
 	@sed s/$(2)/$(3)/g <""$(1)"" >"$(BASEDIR)/.temp"
 	@cp "$(BASEDIR)/.temp" $(1)
-	@rm "$(BASEDIR)/.temp" 
+	@rm "$(BASEDIR)/.temp"
 endef
